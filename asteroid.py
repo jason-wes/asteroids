@@ -13,45 +13,47 @@ def game(max_asteroids=5):
     clock = pygame.time.Clock()
     dt = 0
 
-    player_pos = pygame.Vector2(screen_width/2, screen_height/2) # x,y
-
     class Asteroid(pygame.Rect):
-        # TODO missing pos and is_child 
-        def __init__(self, id, size):
+        # TODO is_child 
+        def __init__(self, id, magnitude):
+            ipos = pygame.Vector2(400, random.randint(-150, -50))
+            super().__init__(ipos.x, ipos.y, 50, 50)
             self.id = id
-            self.pos = pygame.Vector2(400, random.randint(-150, -50))
-            self.size = size
+            self.magnitude = magnitude
 
-        def draw_self(self):
-            pygame.draw.rect(screen, "white", pygame.Rect(self.pos.x, self.pos.y, 50, 50), 5)
+        def update(self):
+            self.x -= 100 * dt
+            self.y += 100 * dt
+            pygame.draw.rect(screen, "white", self, 5)
 
-        def update_pos(self):
-            self.pos.x -= 100 * dt
-            self.pos.y += 100 * dt
+    class Player(pygame.Rect):
+        def __init__(self):
+            super().__init__(screen_width/2, screen_height/2, 50, 50)
 
-    def player_movement(keys):
-        if keys[pygame.K_w] or keys[pygame.K_UP]:
-            player_pos.y -= 300 * dt
-        if keys[pygame.K_a] or keys[pygame.K_LEFT]:
-            player_pos.x -= 300 * dt
-        if keys[pygame.K_s] or keys[pygame.K_DOWN]:
-            player_pos.y += 300 * dt
-        if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
-            player_pos.x += 300 * dt
+        def update(self, keys):
+            if keys[pygame.K_w] or keys[pygame.K_UP]:
+                self.y -= 300 * dt
+            if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+                self.x -= 300 * dt
+            if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+                self.y += 300 * dt
+            if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+                self.x += 300 * dt
 
-        return
+            pygame.draw.rect(screen, "white", self, 25, 5)
 
-    def handle_boundaries(pos):
-        if pos.x < 0:
-            pos.x = screen_width
-        elif pos.x > screen_width:
-            pos.x = 0
-        if pos.y > screen_height:
-            pos.y = 0
-        elif pos.y < 0:
-            pos.y = screen_height
+    def handle_boundaries(rect):
+        if rect.x < 0:
+            rect.x = screen_width
+        elif rect.x > screen_width:
+            rect.x = 0
+        if rect.y > screen_height:
+            rect.y = 0
+        elif rect.y < 0:
+            rect.y = screen_height
 
-    # establish asteroid array 
+    # establish asteroid array and player
+    player = Player()
     asteroid = Asteroid(0, 2)
 
     while playing:
@@ -65,27 +67,23 @@ def game(max_asteroids=5):
         screen.fill("purple")        
         
         # draw entities
-        pygame.draw.circle(screen, "white", player_pos, 25, 5)
-
-        asteroid.draw_self()
-        asteroid.update_pos()
+        asteroid.update()
 
         # keys
         keys = pygame.key.get_pressed()
         # handle keys
-        player_movement(keys)
+        player.update(keys)
 
         # compute bounding box
-        player_bounding_box = pygame.Rect(player_pos.x - 25, player_pos.y - 25, 25 * 2, 25 * 2)
-        if player_bounding_box.colliderect(asteroid):
+        if asteroid.colliderect(player):
             screen.fill("red")
             pygame.display.flip()
             time.sleep(5)
             game()
 
         # handle player and asteroid boundary collisions
-        handle_boundaries(player_pos)
-        handle_boundaries(asteroid.pos)
+        handle_boundaries(player)
+        handle_boundaries(asteroid)
             
         # flip/update
         pygame.display.flip()
