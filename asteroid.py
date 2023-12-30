@@ -16,14 +16,15 @@ def game(max_asteroids=5):
     class Asteroid(pygame.Rect):
         # TODO is_child 
         def __init__(self, id, magnitude):
-            ipos = pygame.Vector2(400, random.randint(-150, -50))
+            ipos = pygame.Vector2(random.randint(0, 800), random.randint(-500, -50))
             super().__init__(ipos.x, ipos.y, 50, 50)
             self.id = id
             self.magnitude = magnitude
+            self.bearing = 1 - 2 * random.randint(0, 1)
 
         def update(self):
-            self.x -= 100 * dt
-            self.y += 100 * dt
+            self.x += self.bearing * 50 * dt
+            self.y += 50 * dt
             pygame.draw.rect(screen, "white", self, 5)
 
     class Player(pygame.Rect):
@@ -49,12 +50,12 @@ def game(max_asteroids=5):
             rect.x = 0
         if rect.y > screen_height:
             rect.y = 0
-        elif rect.y < 0:
+        elif rect.y < 0 and type(rect) is not Asteroid:
             rect.y = screen_height
 
     # establish asteroid array and player
     player = Player()
-    asteroid = Asteroid(0, 2)
+    asteroid_array = [Asteroid(i, 2) for i in range(max_asteroids)]
 
     while playing:
         # event polling
@@ -67,23 +68,25 @@ def game(max_asteroids=5):
         screen.fill("purple")        
         
         # draw entities
-        asteroid.update()
+        for asteroid in asteroid_array:
+            asteroid.update()
 
         # keys
         keys = pygame.key.get_pressed()
         # handle keys
         player.update(keys)
 
-        # compute bounding box
-        if asteroid.colliderect(player):
-            screen.fill("red")
-            pygame.display.flip()
-            time.sleep(5)
-            game()
-
-        # handle player and asteroid boundary collisions
         handle_boundaries(player)
-        handle_boundaries(asteroid)
+
+        # compute bounding box
+        for asteroid in asteroid_array:
+            if asteroid.colliderect(player):
+                screen.fill("red")
+                pygame.display.flip()
+                time.sleep(5)
+                game()
+            
+            handle_boundaries(asteroid)
             
         # flip/update
         pygame.display.flip()
