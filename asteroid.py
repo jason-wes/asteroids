@@ -1,6 +1,7 @@
 import pygame
 import random
 import time
+import math
 
 def game(max_asteroids=5):
     pygame.init()
@@ -30,18 +31,43 @@ def game(max_asteroids=5):
     class Player(pygame.Rect):
         def __init__(self):
             super().__init__(screen_width/2, screen_height/2, 50, 50)
+            self.original_player_icon = pygame.image.load('edited-ship.png')
+            self.original_player_icon = pygame.transform.scale(self.original_player_icon, (self.width, self.height))
+            self.player_icon = self.original_player_icon
+            self.angle = 0
+            self.speed = 5
+
+        def rotate(self, angle):
+            self.angle += angle
+            old_center = (self.x + self.width // 2, self.y + self.height // 2)
+            self.player_icon = pygame.transform.rotate(self.original_player_icon, self.angle)
+            self.width, self.height = self.player_icon.get_size()
+            self.x = old_center[0] - self.width // 2
+            self.y = old_center[1] - self.height // 2
 
         def update(self, keys):
-            if keys[pygame.K_w] or keys[pygame.K_UP]:
+            if keys[pygame.K_w]:
                 self.y -= 300 * dt
-            if keys[pygame.K_a] or keys[pygame.K_LEFT]:
+            if keys[pygame.K_a]:
                 self.x -= 300 * dt
-            if keys[pygame.K_s] or keys[pygame.K_DOWN]:
+            if keys[pygame.K_s]:
                 self.y += 300 * dt
-            if keys[pygame.K_d] or keys[pygame.K_RIGHT]:
+            if keys[pygame.K_d]:
                 self.x += 300 * dt
 
-            pygame.draw.rect(screen, "white", self, 25, 5)
+            if keys[pygame.K_UP]:
+                dx = self.speed * math.cos(math.radians(self.angle + 90))
+                dy = self.speed * math.sin(math.radians(self.angle - 90))
+                moved_rect = self.move(dx, dy)
+                self.x = moved_rect.x
+                self.y = moved_rect.y
+            if keys[pygame.K_LEFT]:
+                self.rotate(5)
+            if keys[pygame.K_RIGHT]:
+                self.rotate(-5)
+
+            # pygame.draw.rect(screen, "white", self, 25, 5)
+            screen.blit(self.player_icon, (self.x, self.y))
 
     def handle_boundaries(rect):
         if rect.x < 0:
@@ -67,7 +93,6 @@ def game(max_asteroids=5):
         # wipe screen
         screen.fill("purple")        
         
-        # draw entities
         for asteroid in asteroid_array:
             asteroid.update()
 
@@ -78,12 +103,12 @@ def game(max_asteroids=5):
 
         handle_boundaries(player)
 
-        # compute bounding box
+        # collision detection (asteroid on ship)
         for asteroid in asteroid_array:
             if asteroid.colliderect(player):
                 screen.fill("red")
                 pygame.display.flip()
-                time.sleep(5)
+                time.sleep(2)
                 game()
             
             handle_boundaries(asteroid)
